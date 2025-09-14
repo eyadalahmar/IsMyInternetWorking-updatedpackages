@@ -3,8 +3,10 @@ const webpack = require('webpack');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const nodeExternals = require('webpack-node-externals');
 const ClosureCompilerPlugin = require('webpack-closure-compiler');
-const ExtractTextPlugin = require("extract-text-webpack-plugin");
-const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
+// const ExtractTextPlugin = require("extract-text-webpack-plugin");
+// const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
 require('dotenv').config();
 
 const PROD_ENV = process.env.NODE_ENV === "production";
@@ -14,13 +16,6 @@ const PATHS = {
     build: path.join(__dirname, "build")
 };
 
-let css_rules = {
-    test: /\.s?css$/,
-    use: (PROD_ENV && !INLINE) ? ExtractTextPlugin.extract({
-        fallback: 'style-loader',
-        use: ['css-loader', 'sass-loader']
-    }) : ["style-loader", "css-loader", "sass-loader"]
-};
 
 let plugins = [new HtmlWebpackPlugin({
         title: "Webpack demo",
@@ -42,7 +37,12 @@ let plugins = [new HtmlWebpackPlugin({
         'WEBPACK_GIT_REPO': JSON.stringify('https://github.com/theBrianCui/IsMyInternetWorking'),
         'PAGE_BASE_TITLE': JSON.stringify('Is My Internet Working?'),
     })
-];
+,
+
+    new MiniCssExtractPlugin({
+      filename: '[name].css',
+      chunkFilename: '[id].css',
+    })];
 
 if (PROD_ENV) {
     plugins.push(new ClosureCompilerPlugin({
@@ -53,13 +53,13 @@ if (PROD_ENV) {
         },
         jsCompiler: true,
     }));
-    plugins.push(new ExtractTextPlugin('style.css'));
+    // plugins.push(new ExtractTextPlugin('style.css'));
 }
 
 if (INLINE) {
-    plugins.push(new ScriptExtHtmlWebpackPlugin({
-        inline: "static/app.js",
-    }));
+    // plugins.push(new ScriptExtHtmlWebpackPlugin({
+    //     inline: "static/app.js",
+    // }));
 };
 
 module.exports = [
@@ -74,7 +74,14 @@ module.exports = [
         entry: path.join(PATHS.src, "app.js"),
         module: {
             rules: [
-                css_rules,
+                 {
+        test: /\.s?css$/,
+        use: [
+          PROD_ENV && !INLINE ? MiniCssExtractPlugin.loader : 'style-loader',
+          'css-loader',
+          'sass-loader'
+        ].filter(Boolean), // filters out false values
+      },
                 {
                     test: /\.hbs$/,
                     use: "handlebars-loader",
@@ -102,4 +109,5 @@ module.exports = [
             filename: "server.js",
         },
     },
+    
 ];
